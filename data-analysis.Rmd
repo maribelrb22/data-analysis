@@ -1,0 +1,57 @@
+---
+title: "Mushroom Data Analysis"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+# Index   
+1. [Introduction](#introduction) \
+2. [Load libraries](#libraries) \
+3. [Load data](#data) \
+\pagebreak
+
+# Introduction<a name="introduction"></a>
+
+The data set is from the Kaggle website. The data set is about the edible and poisonous mushrooms. The data set has 8124 observations and 24 variables. The variables are as follows:
+
+
+**1. class:** edible=e, poisonous=p \
+**2. cap-diameter:** continuous \
+**3. cap-shape:** bell=b, conical=c, convex=x, flat=f, knobbed=k, sunken=s \
+**4. cap-surface:** fibrous=f, grooves=g, scaly=y, smooth=s \
+**5. cap-color:** brown=n, buff=b, cinnamon=c, gray=g, green=r, pink=p, purple=u, red=e, white=w, yellow=y \
+**6. bruises:** bruises=t, no=f \
+**7. odor:** almond=a, anise=l, creosote=c, fishy=y, foul=f, musty=m, none=n, pungent=p, spicy=s \
+**8. gill-attachment:** attached=a, descending=d, free=f, notched=n \
+**9. gill-spacing:** close=c, crowded=w, distant=d \
+**10. gill-size:** broad=b, narrow=n \
+**11. gill-color:** black=k, brown=n, buff=b, chocolate=h, gray=g, green=r, orange=o, pink=p, purple=u, red=e, white=w, yellow=y \
+**12. stalk-shape:** enlarging=e, tapering=t \
+**13. stalk-root:** bulbous=b, club=c, cup=u, equal=e, rhizomorphs=z, rooted=r, missing=? \
+**14. stalk-surface-above-ring:** fibrous=f, scaly=y, silky=k, smooth=s \
+**15. stalk-surface-below-ring:** fibrous=f, scaly=y, silky=k, smooth=s \
+**16. stalk-color-above-ring:** brown=n, buff=b, cinnamon=c, gray=g, orange=o, pink=p, red=e, white=w, yellow=y \
+**17. stalk-color-below-ring:** brown=n, buff=b, cinnamon=c, gray=g, orange=o, pink=p, red=e, white=w, yellow=y \
+**18. veil-type:** partial=p, universal=u \
+**19. veil-color:** brown=n, orange=o, white=w, yellow=y \
+**20. ring-number:** none=n, one=o, two=t \
+**21. ring-type:** cobwebby=c, evanescent=e, flaring=f, large=l, none=n, pendant=p, sheathing=s, zone=z \
+**22. spore-print-color:** black=k, brown=n, buff=b, chocolate=h, green=r, orange=o, purple=u, white=w, yellow=y \
+**23. population:** abundant=a, clustered=c, numerous=n, scattered=s, several=v, solitary=y \
+**24. habitat:** grasses=g, leaves=l, meadows=m, paths=p, urban=u, waste=w, woods=d \
+
+# Load libraries<a name="libraries"></a>
+
+```{r}
+library(caret)
+library(tidyverse)
+```
+
+# Load data<a name="data"></a>
+
+```{r}
+mushroom <- read.csv("data/data.csv", sep = ";")
+```
