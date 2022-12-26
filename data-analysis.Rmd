@@ -1,22 +1,25 @@
 ---
 title: "Mushroom Data Analysis"
 output:
-  pdf_document: default
-  html_notebook: default
   html_document:
     df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
-# Index   
-1. [Introduction](#introduction) \
-2. [Load libraries](#libraries) \
-3. [Load data](#data) \
+# Índice   
+1. [Introducción](#introduction) \
+2. [Cargar librerías](#libraries) \
+3. [Cargar datos](#data) \
+4. [Visualización y preprocesamiento](#preprocessing) \
+4.1 [Imputación de valores nulos](#imputation) \
+4.2 [Codificación de variables categóricas](#encoding) \
+4.3 [Escalado de variables numéricas](#scaling)
 \pagebreak
 
 # Introduction<a name="introduction"></a>
 
-The data set is from the Kaggle website. The data set is about the edible and poisonous mushrooms. The data set has 8124 observations and 24 variables. The variables are as follows:
-
+Los datos provienen de la página web Kaggle. El dataset contiene información sobre setas comestibles y venenosas. El dataset contiene 8124 observaciones y 24 variables. Las variables son las siguientes:
 
 **1. class:** edible=e, poisonous=p \
 **2. cap-diameter:** continuous \
@@ -43,15 +46,149 @@ The data set is from the Kaggle website. The data set is about the edible and po
 **23. population:** abundant=a, clustered=c, numerous=n, scattered=s, several=v, solitary=y \
 **24. habitat:** grasses=g, leaves=l, meadows=m, paths=p, urban=u, waste=w, woods=d \
 
-# Load libraries<a name="libraries"></a>
+# Cargar librerías<a name="libraries"></a>
 
 ```{r}
 library(caret)
 library(tidyverse)
 ```
 
-# Load data<a name="data"></a>
+# Cargar datos<a name="data"></a>
+
+Realizamos la lectura del fichero csv, separándolo por ";" y mostramos las primeras 6 filas del fichero.
+```{r}
+mushroom <- read.csv("./data/data.csv", sep = ";")
+head(mushroom)
+```
+
+Echamos un vistazo a las características de los atributos del dataset. En el caso de las variables numéricas, se puede observar valores como el mínimo, máximo, media, desviación estándar, etc.  
+```{r}
+summary(mushroom)
+```
+
+# Visualización y preprocesamiento<a name="preprocessing"></a>
+
+Sustituimos los valores vacíos por NA para poder trabajar con ellos.
+```{r}
+mushroom[mushroom == ""] <- NA
+```
+
+Comprobamos que se han sustituido los valores vacíos por NA.
+```{r}
+str(mushroom)
+```
+
+Visualizamos los valores nulos de cada variable. Se puede observar que existen 5 variables donde más del 50% de los valores son nulos.
+Estas variables son: stem.surface, veil.color, spore.print.color, stem.root, veil.type.
+Esta información nos puede ayudar a decidir si es conveniente eliminar dichas variables o no. En este caso, dichas variables serán eliminadas ya que, en caso de imputar los valores nulos, se perdería mucha información.
 
 ```{r}
-mushroom <- read.csv("data/data.csv", sep = ";")
+colSums(is.na(mushroom))
+```
+
+Decidimos eliminar aquellas variables que cuenten con más del 50% de valores nulos. Para ello, obtendremos el nombre de las columnas que queremos eliminar.
+
+```{r}
+nacols <- colnames(mushroom)[colSums(is.na(mushroom)) > nrow(mushroom) / 2]
+print(nacols)
+```
+
+Eliminamos las variables no deseadas.
+```{r}
+mushroom <- mushroom[, !names(mushroom) %in% nacols]
+```
+
+Comprobamos que se han eliminado las variables con más del 50% de valores nulos.
+```{r}
+print(colnames(mushroom))
+```
+
+Separamos las variables numéricas de las categóricas.
+```{r}
+colsnames <- colnames(mushroom)
+numerical_features <- c("cap.diameter", "stem.height", "stem.width")
+categorical_features <- colsnames[!colsnames %in% numerical_features]
+print(categorical_features)
+print(numerical_features)
+```
+
+Comprobamos los valores posibles de cada variable categórica y su frecuencia.
+
+```{r}
+for (i in categorical_features) {
+  print(ggplot(mushroom, aes_string(x = i)) +
+    geom_bar(fill = "#7fd6d9") +
+    geom_text(stat = "count", aes(label = scales::percent(..count.. / nrow(mushroom)), vjust = -0.25)) +
+    labs(x = i, y = "Percentage") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+}
+```
+
+Tras visualizar los histogramas de cada variable, llegamos a las siguientes conclusiones:
+
+* La variable dependiente "class" está balanceada, ya que la frecuencia de "e" y "p" es similar, en una proporción de 44,5% y 55,5% respectivamente. Por lo tanto, no es necesario realizar un balanceo de la variable dependiente, permitiendo aplicar la medida de evaluación "accuracy" para evaluar el modelo.
+* Los valores NA de los atributos restantes serán imputados con la moda de cada variable.
+
+A continuación, visualizaremos la distribución de las variables numéricas a través de una gráfica generada con "featurePlot". Esta requiere que la variable objetivo sea de tipo factor, por lo que hacemos la conversión.
+```{r}
+mushroom$class <- as.factor(mushroom$class)
+featurePlot(x = mushroom[, numerical_features], y = mushroom$class, plot = "strip")
+```
+
+Con la gráfica anterior, se puede observar que para valores altos de cap.diameter, stem.height y stem.width, la probabilidad de que la clase sea "e" es mayor que la de "p".
+
+Para decidir si es conveniente eliminar alguna variable, se puede utilizar la función "nearZeroVar". Esta función devuelve un vector con los índices de las variables que tienen una varianza cercana a 0.
+
+```{r}
+near_zero_col <- nearZeroVar(mushroom, saveMetrics = FALSE)
+colnames(mushroom)[c(near_zero_col)]
+```
+
+Como conclusión, la variable "ring.type" podría ser eliminada ya que tiene una varianza cercana a 0. A continuación, visualizaremos la correlación existente con la variable dependiente "class".
+```{r}
+print(ggplot(mushroom, aes_string(x = "ring.type")) +
+  geom_bar(aes(fill = class)))
+```
+
+Tras visualizar la gráfica anterior, se puede observar que la distribución de la variable dependiente "class" es similar en casi todos los valores de "ring.type". Sin embargo, en el caso de "ring.type" = "z" y "ring.type" = "m", la distribución de la variable dependiente "class" es diferente. Por lo tanto, se decide no eliminar la variable "ring.type".
+
+## Imputación de valores nulos<a name="imputation"></a>
+
+Como se ha comentado anteriormente, los valores nulos de las variables categóricas se imputarán a través de la moda de cada variable. Esto es debido a que la función preProcess() de la librería caret no permite imputar valores nulos de variables categóricas.
+
+```{r}
+for (i in categorical_features) {
+  mushroom[, i][is.na(mushroom[, i])] <- names(which.max(table(mushroom[, i])))
+}
+```
+
+Podemos comprobar que ya no existen valores nulos en las variables categóricas.
+```{r}
+colSums(is.na(mushroom))
+```
+
+## Codificación de variables categóricas<a name="encoding"></a>
+
+Para codificar las variables categóricas, se utilizará la función dummyVars() de la librería caret. Esta función devuelve un objeto de tipo "dummyVars" que contiene la información necesaria para codificar las variables categóricas. A continuación, se codificarán las variables categóricas y se eliminarán las variables originales.
+
+```{r}
+mushroom <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
+mushroom <- as.data.frame(mushroom)
+```
+
+Visualizamos las variables categóricas codificadas y las dimensiones del dataset.
+```{r}
+dim_mushroom <- dim(mushroom)
+print(dim_mushroom)
+str(mushroom)
+```
+
+## Escalado de variables numéricas<a name="scaling"></a>
+
+Para escalar las variables numéricas, se utilizará la función preProcess() de la librería caret. Esta función devuelve un objeto de tipo "preProcess" que contiene la información necesaria para escalar las variables numéricas. A continuación, se escalarán las variables numéricas y se eliminarán las variables originales.
+
+```{r}
+range_numeric <- preProcess(mushroom[, numerical_features], method = c("range"))
+mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, numerical_features])
+str(mushroom)
 ```
