@@ -3,8 +3,8 @@ title: "Mushroom Data Analysis"
 output:
   html_document:
     df_print: paged
-  html_notebook: default
   pdf_document: default
+  html_notebook: default
 ---
 
 # Índice   
@@ -15,6 +15,12 @@ output:
 4.1 [Imputación de valores nulos](#imputation) \
 4.2 [Codificación de variables categóricas](#encoding) \
 4.3 [Escalado de variables numéricas](#scaling)
+5. [Análisis de datos](#analysis) \
+5.1 [Análisis aprendizaje supervisado](#supervised) \
+5.2 [Análisis aprendizaje no supervisado](#unsupervised) \
+5.2.1 [K-means](#kmeans) \
+5.2.2 [Clustering jerárquico](#hierarchical) \
+
 \pagebreak
 
 # Introduction<a name="introduction"></a>
@@ -51,6 +57,11 @@ Los datos provienen de la página web Kaggle. El dataset contiene información s
 ```{r}
 library(caret)
 library(tidyverse)
+library(plotly)
+library(dplyr)
+library(cluster)
+library(factoextra)
+library(dendextend)
 ```
 
 # Cargar datos<a name="data"></a>
@@ -192,3 +203,210 @@ range_numeric <- preProcess(mushroom[, numerical_features], method = c("range"))
 mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, numerical_features])
 str(mushroom)
 ```
+
+
+# Análisis de datos<a name="analysis"></a>
+
+## Análisis aprendizaje supervisado<a name="supervised"></a>
+
+## Análisis aprendizaje no supervisado<a name="unsupervised"></a>
+
+Para poder trabajar con algoritmos no supervisados será necesario que las variables sean numéricas. Por lo tanto, se eliminarán las variables categóricas del dataset.
+
+```{r}
+numerical_columns <- mushroom[, numerical_features]
+```
+
+### K-means<a name="kmeans"></a>
+
+En primer lugar, representaremos de forma gráfica la distribución inicial de los datos.
+
+```{r}
+df <- as.data.frame(numerical_columns)
+
+plot_ly(df,
+  x = ~cap.diameter, y = ~stem.height,
+  z = ~stem.width
+) %>%
+  add_markers(size = 1.5)
+```
+
+Para aplicar el algoritmo kmeans se utilizará la función kmeans() de la librería cluster. Será necesario determinar el número de clusters óptimo.
+Para ello, se utilizará la función "kmeans" con diferentes valores de "centers" y se calculará la suma de cuadrados internos (within groups sum of squares) para cada valor de "centers". A continuación, se representará la suma de cuadrados internos vs. número de clusters.
+
+```{r}
+wss_per_k <- 0
+for (i in 1:10) {
+  kmeans_aux <- kmeans(numerical_columns, center = i, nstar = 20)
+  wss_per_k[i] <- kmeans_aux$tot.withinss
+}
+par(mfrow = c(1, 1))
+plot(1:10, wss_per_k,
+  type = "b",
+  xlab = "Number of clusters",
+  ylab = "WSS",
+)
+```
+
+Como se puede observar en la gráfica anterior, la suma de cuadrados internos disminuye a medida que aumenta el número de clusters. Sin embargo, a partir de 2 clusters, la disminución de la suma de cuadrados internos es muy pequeña. Por lo tanto, se decide utilizar 2 clusters.
+Comprobamos que tiene sentido utilizar 2 clusters, ya que conocemos que el dataset es binario.
+
+```{r}
+km_model <- kmeans(df, center = 2, nstar = 20)
+```
+
+A continuación, se representará la distribución de los datos en función de los clusters obtenidos.
+```{r}
+df$cluster <- factor(km_model$cluster)
+
+plot_ly(df,
+  x = ~cap.diameter, y = ~stem.height,
+  z = ~stem.width, color = ~cluster
+) %>%
+  add_markers(size = 1.5)
+```
+
+Se puede observar que los champiñones de menor tamaño (incluyendo diámetro, altura y anchura) pertenecen al cluster 1 y los de mayor tamaño pertenecen al cluster 2.
+
+Considerando el clúster 1 como champiñones venenosos y el clúster 2 como champiñones comestibles, se puede observar que los champiñones comestibles son más grandes que los comestibles. Comprobaremos a través de medidas de bondad externas la eficacia del clustering.
+```{r}
+real_classes <- ifelse(mushroom$class == "e", 1, 2)
+predicted_classes <- km_model$cluster
+predicted_classes <- as.numeric(predicted_classes)
+```
+
+Calculamos el accuracy del clustering a través de los datos externos, para representar la proporción de datos correctamente clasificados. Obtenemos un accuracy del 69,7%, lo que indica que el clustering es eficaz.
+```{r}
+accuracy <- sum(real_classes == predicted_classes) / length(real_classes)
+print(accuracy)
+```
+
+A continuación, calcularemos el valor promedio de las variables para cada cluster generado con el modelo de k-means.
+```{r}
+grouped_mushroom <- df %>%
+  group_by(cluster) %>%
+  summarise(
+    mean_cap_diameter = mean(cap.diameter),
+    mean_stem_height = mean(stem.height),
+    mean_stem_width = mean(stem.width)
+  )
+
+grouped_mushroom
+```
+
+A partir de este momento, hemos decidido modificar el dataset actual debido a que para aplicar diversas técnicas como "silhouette" o "dendrogram" (para el caso de clustering jerárquico) es necesario que el dataset sea de menor tamaño.
+Para mantener la proporción de los datos de cada clase, se reducirá el dataset haciendo uso de createDataPartition, manteniendo únicamente un 1% de los datos iniciales para el análisis.
+
+```{r}
+set.seed(42)
+split <- createDataPartition(mushroom$class, p = 0.01)
+smaller_df <- mushroom[split$Resample1, ]
+```
+
+Comprobamos que la proporción de datos de cada clase se mantiene al hacer la partición.
+```{r}
+initial_class_prop <- table(mushroom$class) / nrow(mushroom)
+smaller_class_prop <- table(smaller_df$class) / nrow(smaller_df)
+
+print(initial_class_prop)
+print(smaller_class_prop)
+```
+
+Ya podemos trabajar con el dataset reducido. Comprobamos que el dataset tiene 611 ejemplos y 3 atributos.
+```{r}
+smaller_df <- smaller_df[, numerical_features]
+dim(smaller_df)
+```
+
+En primer lugar, visualizaremos la distribución inicial de los datos a través de una gráfica 3D.
+
+```{r}
+plot_ly(smaller_df,
+  x = ~cap.diameter, y = ~stem.height,
+  z = ~stem.width
+) %>%
+  add_markers(size = 1.5)
+```
+
+A continuación, vamos a estudiar cuál sería el número óptimo de clusters para el dataset reducido haciendo uso de la medida de bondad interna "silhouette". Para ello, utilizaremos la función fviz_nbclust de factoextra.
+Silhouette es una medida que sirve para validar el número de clusters. Se calcula como la diferencia entre la distancia media de un punto a los puntos de su propio cluster y la distancia media de un punto a los puntos de su cluster más cercano.
+
+```{r}
+fviz_nbclust(smaller_df, FUNcluster = kmeans, method = "silhouette")
+```
+
+Según la gráfica, podemos afirmar que el número óptimo de clusters es 2.
+
+Por último, visualizamos la distribución de los datos en función de los clusters obtenidos.
+
+```{r}
+km_sm_model <- kmeans(smaller_df, center = 2, nstar = 20)
+cluster <- factor(km_sm_model$cluster)
+
+plot_ly(smaller_df,
+  x = ~cap.diameter, y = ~stem.height,
+  z = ~stem.width, color = ~cluster
+) %>%
+  add_markers(size = 1.5)
+```
+
+### Clustering jerárquico<a name="hierarchical"></a>
+
+A continuación, vamos a aplicar el algoritmo de clustering jerárquico a nuestro dataset reducido. Para ello, utilizaremos la función hclust. Primero, calculamos la distancia entre los puntos del dataset.
+```{r}
+distance <- dist(smaller_df)
+hc_model <- hclust(distance)
+```
+
+Representamos el dendrograma para visualizar la distribución de los datos en función de los clusters obtenidos.
+
+```{r}
+dend_modelo <- as.dendrogram(hc_model)
+plot(dend_modelo)
+```
+
+Hasta ahora, hemos obtenido la jerarquía de los datos, pero lo que realmente nos interesa es la clasificación de los datos en función de los clusters.
+Cortaremos el dendrograma en un punto que nos interese para obtener los clusters. En este caso, hemos decidido cortar el dendrograma en 70.
+```{r}
+cut <- 0.9
+
+dend_modelo %>%
+  color_branches(h = cut) %>%
+  color_labels(h = cut) %>%
+  plot()
+```
+
+Para obtener el número óptimo de cluster, haremos uso de la medida interna de bonda silhouette. Para ello, utilizaremos la función fviz_nbclust de factoextra.
+
+```{r}
+fviz_nbclust(smaller_df, FUNcluster = hcut, method = "silhouette")
+```
+
+En este caso, hemos obtenido que el número óptimo de clusters sería 3.
+
+Calculamos la agrupación del modelo en función del número de clusters que hemos decidido utilizar. Además, calculamos el promedio de los datos de cada cluster para ver si podemos sacar alguna conclusión.
+
+```{r}
+cluster <- cutree(hc_model, k = 3)
+
+grouped_mushroom <- smaller_df %>%
+  mutate(cluster = cluster) %>%
+  group_by(cluster) %>%
+  summarise_all(mean)
+grouped_mushroom
+```
+
+Visualizamos la agrupación de los datos en función de los clusters obtenidos.
+
+```{r}
+cluster <- factor(cluster)
+
+plot_ly(smaller_df,
+  x = ~cap.diameter, y = ~stem.height,
+  z = ~stem.width,
+  color = ~cluster
+) %>%
+  add_markers(size = 1.5)
+```
+
+Podemos observar que el número de clusters obtenidos ha sido 3 debido a que existen datos muy dispersos que no se pueden agrupar en un mismo cluster.
