@@ -178,6 +178,308 @@ Podemos comprobar que ya no existen valores nulos en las variables categóricas.
 colSums(is.na(mushroom))
 ```
 
+## Escalado de variables numéricas<a name="scaling"></a>
+
+Para escalar las variables numéricas, se utilizará la función preProcess() de la librería caret. Esta función devuelve un objeto de tipo "preProcess" que contiene la información necesaria para escalar las variables numéricas. A continuación, se escalarán las variables numéricas y se eliminarán las variables originales.
+
+```{r}
+range_numeric <- preProcess(mushroom[, numerical_features], method = c("range"))
+mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, numerical_features])
+str(mushroom)
+```
+
+
+# Análisis de datos<a name="analysis"></a>
+
+## Análisis aprendizaje supervisado<a name="supervised"></a>
+
+### Regresión Logística<a name="logistic"></a>
+
+Primero se dividirá el dataset en dos conjuntos: uno de entrenamiento y otro de test. El conjunto de entrenamiento se utilizará para entrenar los modelos y el conjunto de test se utilizará para evaluarlos.
+
+```{r}
+library(caTools)
+set.seed(18)
+
+split <- sample.split(mushroom$class, SplitRatio = 0.8)
+training_set <- subset(mushroom, split == TRUE)
+test_set <- subset(mushroom, split == FALSE)
+
+
+table(training_set$class)
+table(test_set$class)
+```
+
+
+(Redactar) La regresión logística permite predecir el resultado de una variable categórica en función de las variables independientes o predictoras.
+
+```{r}
+rl_classiffier <- glm(class~., family = binomial, data = training_set)
+summary(rl_classiffier)
+```
+Una vez hemos aplicado la función glm(), obtenemos los valores residuales del modelo y los coeficientes de ajuste para cada una de las variables independientes.
+Además, obtenemos el p-value correspondiente a cada una de ellas. Las variables con dos o tres asteriscos aportan bastante relevancia como predictores;
+sin embargo, las variables que no poseen ninguno o uno son de menor relevancia.
+
+A continuación, procedemos a predecir las clases del conjunto de entrenamiento y de validación. Tomamos como umbral 0,5, de forma que
+si la probabilidad queda por encima de dicho umbral es que es comestible, pero si queda por debajo es que es venenoso.
+Por último crearemos la matriz de confusión para valorar los resultados de las predicciones.
+
+```{r}
+
+pred_train <- predict(rl_classiffier, newdata = training_set, type = "response")
+pred_train <- ifelse(pred_train > 0.5, "p", "e")
+pred_train <- factor(pred_train, levels = c("e", "p"), labels = c("e", "p"))
+
+confusionM <- table(training_set$class, pred_train)
+confusionM
+
+accuracy <- sum(diag(confusionM)) / sum(confusionM)
+accuracy
+```
+Una vez hemos visto el resultado que muestra la matriz de confusión, se observa que la predicción tiene una precisión del 77,8%, lo que puede resultar algo baja.
+
+Repetimos el mismo proceso para el conjunto de test.
+
+```{r}
+pred_test <- predict(rl_classiffier, newdata = test_set, type = "response")
+pred_test <- ifelse(pred_test > 0.5, "p", "e")
+pred_test <- factor(pred_test, levels = c("e", "p"), labels = c("e", "p"))
+
+confusionM <- table(test_set$class, pred_test)
+confusionM
+
+accuracy_rl <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_rl
+```
+
+Obtenemos una precisión con gran similitud a la del conjunto de training, un 77,3%.
+Para finalizar la regresión logística, vamos a graficar la curva ROC, la cual nos aporta la visualización de la relación entre los falsos y verdaderos positivos.
+```{r}
+library(ROCR)
+pred_rl_roc <- prediction(as.numeric(pred_test), as.numeric(test_set$class))
+perf_rl_roc <- performance(pred_rl_roc, "tpr", "fpr")
+perf_rl_auc <- performance(pred_rl_roc, "auc")
+
+print(perf_rl_auc@y.values[[1]])
+plot(perf_rl_roc)
+```
+Observando la curva ROC resultante podemos comentar que se mantiene por encima de la diagonal, lo que es buena señal, pero se aproxima a ella, pudiendo haber
+proporcionado resultados mejores.
+
+### k-NN<a name="knn"></a>
+
+Antes de nada, para poder aplicar knn, debemos transformar las variables categóricas en numéricas.
+
+```{r}
+mushroom_num <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
+mushroom_num <- as.data.frame(mushroom_num)
+```
+
+Visualizamos las variables categóricas codificadas y las dimensiones del dataset.
+```{r}
+dim_mushroom <- dim(mushroom_num)
+print(dim_mushroom)
+str(mushroom_num)
+```
+
+```{r}
+library(caTools)
+set.seed(18)
+
+split <- sample.split(mushroom_num$class, SplitRatio = 0.8)
+training_set_num <- subset(mushroom_num, split == TRUE)
+test_set_num <- subset(mushroom_num, split == FALSE)
+
+
+table(training_set_num$class)
+table(test_set_num$class)
+```
+
+Para comenzar a aplicar el clasificador del vecino más cercano, haremos uso de la función knn() tomando como valor de k=5.
+
+```{r}
+library(class)
+set.seed(18)
+pred_knn <- knn(train = training_set_num[, -1], test = test_set_num[, -1], cl = training_set_num$class, k = 5)
+```
+Una vez tenemos los resultados de las predicciones, cosntruimos la matriz de confusión.
+
+```{r}
+summary(pred_knn)
+
+confusionM <- table(test_set_num$class, pred_knn)
+confusionM
+
+accuracy_knn <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_knn
+```
+Como resultado de la matriz de confusión, tenemos una precisión del 99%, resultando ser mejor que en la regresión logística.
+
+```{r}
+library(ROCR)
+pred_knn_roc <- prediction(as.numeric(pred_knn), as.numeric(test_set_num$class))
+perf_knn_roc <- performance(pred_knn_roc, "tpr", "fpr")
+perf_knn_auc <- performance(pred_knn_roc, "auc")
+
+print(perf_knn_auc@y.values[[1]])
+plot(perf_knn_roc)
+```
+Una vez obtenemos la curva ROC y el resultado del área de debajo de la misma, observamos que el resultado es muy positivo, ya que gráficamente se aproxima a la vertical.
+
+### Clasificación con Árbol de Decisión<a name="arbol"></a>
+
+Comenzamos aplicando el árbol de decisión mediante la función rpart() como se muestra a continuación.
+
+```{r}
+library(rpart)
+set.seed(18)
+dt_classiffier <- rpart(class ~ ., data = training_set)
+```
+```{r}
+library(rattle)
+tree2 <- rpart(class ~ ., training_set, method = "class", 
+               control = rpart.control(cp=0.00001))
+
+# Dibuja árbol
+fancyRpartPlot(tree2)
+
+pruned <- prune(tree2, cp = 0.01)
+
+# Dibuja árbol
+fancyRpartPlot(pruned)
+```
+Construimos la matriz de confusión al igual que en los casos anteriores.
+
+```{r}
+pred_dt <- predict(dt_classiffier, newdata = test_set, type = 'class')
+
+confusionM <- table(test_set$class, pred_dt)
+confusionM
+
+accuracy_dt <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_dt
+```
+
+Una vez tenemos el resultado para el valor de precisión en la predicción una vez aplicado el árbol de decisión, 83%,
+pasamos a aplicar de forma visual la construcción de la gráfica de la curva ROC y el cálculo del AUC. En este caso,
+continúa siendo mejor resultado que el obtenido mediante la regresión logística, pero quedando por debajo que el
+resultado obtenido al aplicar KNN.
+
+```{r}
+library(ROCR)
+pred_dt_roc <- prediction(as.numeric(pred_dt), as.numeric(test_set$class))
+perf_dt_roc <- performance(pred_dt_roc, "tpr", "fpr")
+perf_dt_auc <- performance(pred_dt_roc, "auc")
+
+print(perf_dt_auc@y.values[[1]])
+plot(perf_dt_roc)
+```
+
+### Random Forests classiffier<a name="random"></a>
+
+Comenzamos aplicando el clasificador de Random Forest mediante la función llamada de la misma forma; es decir, randomForest().
+En esta función, el valor correspondiente al parámetro ntree indica la cantidad de árboles de decisión que formarán parte del clasificador.
+
+```{r}
+library(randomForest)
+set.seed(18)
+rf_classiffier <- randomForest(class ~ ., data = training_set, ntree = 250)
+```
+
+Realizamos las predicciones sobre el conjunto de datos y construimos la matriz de confusión.
+
+```{r}
+pred_rf <- predict(rf_classiffier, newdata = test_set, type = 'class')
+
+confusionM <- table(test_set$class, pred_rf)
+confusionM
+
+accuracy_rf <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_rf
+```
+
+De forma similar al clasificador KNN, obtenemos un valor de precisión del 99%.
+Definimos la curva ROC para este caso y realizamos el cálculo del área bajo la curva, los cuales nos simbolizan su altísima precisión.
+
+```{r}
+library(ROCR)
+pred_rf_roc <- prediction(as.numeric(pred_rf), as.numeric(test_set$class))
+perf_rf_roc <- performance(pred_rf_roc, "tpr", "fpr")
+perf_rf_auc <- performance(pred_rf_roc, "auc")
+
+print(perf_rf_auc@y.values[[1]])
+plot(perf_rf_roc)
+```
+
+### Kernel SVM Classifier
+
+Comenzamos a aplicar el clasificador Máquina de Soporte Vectorial haciendo uso de la función svm().
+En esta función, los valores de los parámetros type y kernel hacen referencia al tipo de clasificador; es decir,
+que el kernel es de tipo radial y gaussiano. 
+
+```{r}
+library(e1071)
+set.seed(18)
+svm_classiffier <- svm(class ~ ., data = training_set, 
+                       type = 'C-classification', kernel = 'radial')
+```
+La predicción y la matríz de confusión son entonces las mostradas a continuación.
+
+```{r}
+pred_svm <- predict(svm_classiffier, newdata = test_set, type = 'class')
+
+confusionM <- table(test_set$class, pred_svm)
+confusionM
+
+accuracy_svm <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_svm
+```
+
+Como se puede observar el valor de la predicción en este caso resulta ser del 95%.
+Para finalizar, construimos la curva ROC correspondiente en este caso 
+
+```{r}
+library(ROCR)
+pred_svm_roc <- prediction(as.numeric(pred_svm), as.numeric(test_set$class))
+perf_svm_roc <- performance(pred_svm_roc, "tpr", "fpr")
+perf_svm_auc <- performance(pred_svm_roc, "auc")
+
+print(perf_svm_auc@y.values[[1]])
+plot(perf_svm_roc)
+```
+
+### Conclusiones
+
+Una vez aplicados los cinco distintos métodos de clasificación sobre nuestro dataset tras realizar el preprocesamiento, podemos concluir diciendo que los clasificadores de KNN y Random Forest son los que poseen mayor precisión
+y, por tanto, menor error de predicción. Sin embargo, con los resultados obtenidos por parte de ambos podemos detectar un posible sobreajuste, no beneficiando al modelo. Por esta razón, creemos que resulta más beneficioso sacrificar
+parte del valor de precisión, teniendo en cuenta algunos valores de falsos positivos y falsos negativos, como ocurre en el caso del clasificador de la Máquina de Soporte Vectorial, aprovechando así su capacidad de mayor generalización.
+
+```{r}
+accuracy_comp <- matrix(c(accuracy_rl, accuracy_knn, accuracy_dt, accuracy_rf, accuracy_svm), ncol = 5)
+barplot(accuracy_comp)
+
+barplot(accuracy_comp,
+main = "Accuracy Comparison",
+xlab = "Accuracy (%)",
+ylab = "Method",
+names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
+col = "darkred")
+```
+
+```{r}
+perf_auc <- matrix(c(perf_rl_auc@y.values[[1]], perf_knn_auc@y.values[[1]], perf_dt_auc@y.values[[1]], perf_rf_auc@y.values[[1]], perf_svm_auc@y.values[[1]]), ncol = 5)
+barplot(perf_auc)
+
+barplot(perf_auc,
+main = "AUC Comparison",
+xlab = "AUC (%)",
+ylab = "Method",
+names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
+col = "darkred")
+```
+## Análisis aprendizaje no supervisado<a name="unsupervised"></a>
+
 ## Codificación de variables categóricas<a name="encoding"></a>
 
 Para codificar las variables categóricas, se utilizará la función dummyVars() de la librería caret. Esta función devuelve un objeto de tipo "dummyVars" que contiene la información necesaria para codificar las variables categóricas. A continuación, se codificarán las variables categóricas y se eliminarán las variables originales.
@@ -194,22 +496,6 @@ print(dim_mushroom)
 str(mushroom)
 ```
 
-## Escalado de variables numéricas<a name="scaling"></a>
-
-Para escalar las variables numéricas, se utilizará la función preProcess() de la librería caret. Esta función devuelve un objeto de tipo "preProcess" que contiene la información necesaria para escalar las variables numéricas. A continuación, se escalarán las variables numéricas y se eliminarán las variables originales.
-
-```{r}
-range_numeric <- preProcess(mushroom[, numerical_features], method = c("range"))
-mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, numerical_features])
-str(mushroom)
-```
-
-
-# Análisis de datos<a name="analysis"></a>
-
-## Análisis aprendizaje supervisado<a name="supervised"></a>
-
-## Análisis aprendizaje no supervisado<a name="unsupervised"></a>
 
 Para poder trabajar con algoritmos no supervisados será necesario que las variables sean numéricas. Por lo tanto, se eliminarán las variables categóricas del dataset.
 
