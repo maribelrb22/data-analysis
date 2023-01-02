@@ -23,9 +23,10 @@ output:
 
 \pagebreak
 
-# Introduction<a name="introduction"></a>
+# Introducción<a name="introduction"></a>
 
-Los datos provienen de la página web Kaggle. El dataset contiene información sobre setas comestibles y venenosas. El dataset contiene 8124 observaciones y 24 variables. Las variables son las siguientes:
+Los datos provienen de la página web Kaggle. El dataset contiene información sobre setas comestibles y venenosas. El dataset contiene 8124 observaciones y 24 variables.
+Las variables con las que trabajaremos son las siguientes:
 
 **1. class:** edible=e, poisonous=p \
 **2. cap-diameter:** continuous \
@@ -55,6 +56,14 @@ Los datos provienen de la página web Kaggle. El dataset contiene información s
 # Cargar librerías<a name="libraries"></a>
 
 ```{r}
+install.packages("caret")
+install.packages("tidyverse")
+install.packages("plotly")
+install.packages("dplyr")
+install.packages("factoextra")
+install.packages("dendextend")
+```
+```{r}
 library(caret)
 library(tidyverse)
 library(plotly)
@@ -66,7 +75,7 @@ library(dendextend)
 
 # Cargar datos<a name="data"></a>
 
-Realizamos la lectura del fichero csv, separándolo por ";" y mostramos las primeras 6 filas del fichero.
+En primer lugar, realizamos la lectura del fichero csv, separándolo por ";" y mostramos las primeras 6 filas del fichero.
 ```{r}
 mushroom <- read.csv("./data/data.csv", sep = ";")
 head(mushroom)
@@ -79,25 +88,27 @@ summary(mushroom)
 
 # Visualización y preprocesamiento<a name="preprocessing"></a>
 
-Sustituimos los valores vacíos por NA para poder trabajar con ellos.
+Debido a que el dataset contiene valores vacíos, los sustituiremos por valores NA para poder trabajar con ellos.
 ```{r}
 mushroom[mushroom == ""] <- NA
 ```
 
-Comprobamos que se han sustituido los valores vacíos por NA.
+Comprobamos que se han sustituido correctamente los valores vacíos por NA.
 ```{r}
 str(mushroom)
 ```
 
-Visualizamos los valores nulos de cada variable. Se puede observar que existen 5 variables donde más del 50% de los valores son nulos.
-Estas variables son: stem.surface, veil.color, spore.print.color, stem.root, veil.type.
-Esta información nos puede ayudar a decidir si es conveniente eliminar dichas variables o no. En este caso, dichas variables serán eliminadas ya que, en caso de imputar los valores nulos, se perdería mucha información.
+Comprobaremos la cantidad de valores nulos que hay en cada variable. Para ello, utilizaremos la función colSums(is.na(mushroom)), que nos devolverá la suma de valores nulos de cada variable.
+Esta información nos ayudará a decidir si será conveniente eliminar dichas variables o no.
+Podemos observar que existen 5 variables donde más del 50% de los valores son nulos. Estas son: stem.surface, veil.color, spore.print.color, stem.root, veil.type.
+Esta información nos ayudará a decidir si será conveniente eliminar dichas variables o no. En este caso, dichas variables serán eliminadas ya que, en caso de imputar los valores nulos, se perdería mucha información.
 
 ```{r}
 colSums(is.na(mushroom))
 ```
 
-Decidimos eliminar aquellas variables que cuenten con más del 50% de valores nulos. Para ello, obtendremos el nombre de las columnas que queremos eliminar.
+En este caso, decidimos eliminar aquellas variables con más del 50% de valores nulos ya que, en caso de imputar los valores nulos, se perdería mucha información.
+Para ello, en primer lugar, obtendremos el nombre de las columnas que queremos eliminar.
 
 ```{r}
 nacols <- colnames(mushroom)[colSums(is.na(mushroom)) > nrow(mushroom) / 2]
@@ -114,7 +125,7 @@ Comprobamos que se han eliminado las variables con más del 50% de valores nulos
 print(colnames(mushroom))
 ```
 
-Separamos las variables numéricas de las categóricas.
+A continuación, separamos las variables numéricas de las categóricas.
 ```{r}
 colsnames <- colnames(mushroom)
 numerical_features <- c("cap.diameter", "stem.height", "stem.width")
@@ -123,7 +134,7 @@ print(categorical_features)
 print(numerical_features)
 ```
 
-Comprobamos los valores posibles de cada variable categórica y su frecuencia.
+Visualizamos la distribución de las variables categóricas a través de histogramas. Observaremos los posibles valores de cada variable categórica junto con su frecuencia de aparición en el dataset.
 
 ```{r}
 for (i in categorical_features) {
@@ -137,7 +148,7 @@ for (i in categorical_features) {
 
 Tras visualizar los histogramas de cada variable, llegamos a las siguientes conclusiones:
 
-* La variable dependiente "class" está balanceada, ya que la frecuencia de "e" y "p" es similar, en una proporción de 44,5% y 55,5% respectivamente. Por lo tanto, no es necesario realizar un balanceo de la variable dependiente, permitiendo aplicar la medida de evaluación "accuracy" para evaluar el modelo.
+* La variable dependiente "class" está balanceada, es decir, la frecuencia de aparición de "e" (edible) y "p" (poisonous) es similar, en una proporción de 44,5% y 55,5% respectivamente. Por lo tanto, no es necesario realizar un balanceo de la variable dependiente, permitiendo aplicar la medida de evaluación "accuracy" para evaluar el modelo.
 * Los valores NA de los atributos restantes serán imputados con la moda de cada variable.
 
 A continuación, visualizaremos la distribución de las variables numéricas a través de una gráfica generada con "featurePlot". Esta requiere que la variable objetivo sea de tipo factor, por lo que hacemos la conversión.
@@ -188,7 +199,6 @@ mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, nu
 str(mushroom)
 ```
 
-
 # Análisis de datos<a name="analysis"></a>
 
 ## Análisis aprendizaje supervisado<a name="supervised"></a>
@@ -205,16 +215,14 @@ split <- sample.split(mushroom$class, SplitRatio = 0.8)
 training_set <- subset(mushroom, split == TRUE)
 test_set <- subset(mushroom, split == FALSE)
 
-
 table(training_set$class)
 table(test_set$class)
 ```
 
-
 (Redactar) La regresión logística permite predecir el resultado de una variable categórica en función de las variables independientes o predictoras.
 
 ```{r}
-rl_classiffier <- glm(class~., family = binomial, data = training_set)
+rl_classiffier <- glm(class ~ ., family = binomial, data = training_set)
 summary(rl_classiffier)
 ```
 Una vez hemos aplicado la función glm(), obtenemos los valores residuales del modelo y los coeficientes de ajuste para cada una de las variables independientes.
@@ -226,15 +234,14 @@ si la probabilidad queda por encima de dicho umbral es que es comestible, pero s
 Por último crearemos la matriz de confusión para valorar los resultados de las predicciones.
 
 ```{r}
-
 pred_train <- predict(rl_classiffier, newdata = training_set, type = "response")
 pred_train <- ifelse(pred_train > 0.5, "p", "e")
 pred_train <- factor(pred_train, levels = c("e", "p"), labels = c("e", "p"))
 
-confusionM <- table(training_set$class, pred_train)
-confusionM
+confusion_m <- table(training_set$class, pred_train)
+confusion_m
 
-accuracy <- sum(diag(confusionM)) / sum(confusionM)
+accuracy <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy
 ```
 Una vez hemos visto el resultado que muestra la matriz de confusión, se observa que la predicción tiene una precisión del 77,8%, lo que puede resultar algo baja.
@@ -246,10 +253,10 @@ pred_test <- predict(rl_classiffier, newdata = test_set, type = "response")
 pred_test <- ifelse(pred_test > 0.5, "p", "e")
 pred_test <- factor(pred_test, levels = c("e", "p"), labels = c("e", "p"))
 
-confusionM <- table(test_set$class, pred_test)
-confusionM
+confusion_m <- table(test_set$class, pred_test)
+confusion_m
 
-accuracy_rl <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_rl <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy_rl
 ```
 
@@ -290,7 +297,6 @@ set.seed(18)
 split <- sample.split(mushroom_num$class, SplitRatio = 0.8)
 training_set_num <- subset(mushroom_num, split == TRUE)
 test_set_num <- subset(mushroom_num, split == FALSE)
-
 
 table(training_set_num$class)
 table(test_set_num$class)
@@ -338,21 +344,19 @@ dt_classiffier <- rpart(class ~ ., data = training_set)
 ```
 ```{r}
 library(rattle)
-tree2 <- rpart(class ~ ., training_set, method = "class", 
-               control = rpart.control(cp=0.00001))
-
-# Dibuja árbol
+tree2 <- rpart(class ~ ., training_set,
+  method = "class",
+  control = rpart.control(cp = 0.00001)
+)
 fancyRpartPlot(tree2)
 
 pruned <- prune(tree2, cp = 0.01)
-
-# Dibuja árbol
 fancyRpartPlot(pruned)
 ```
 Construimos la matriz de confusión al igual que en los casos anteriores.
 
 ```{r}
-pred_dt <- predict(dt_classiffier, newdata = test_set, type = 'class')
+pred_dt <- predict(dt_classiffier, newdata = test_set, type = "class")
 
 confusionM <- table(test_set$class, pred_dt)
 confusionM
@@ -390,7 +394,7 @@ rf_classiffier <- randomForest(class ~ ., data = training_set, ntree = 250)
 Realizamos las predicciones sobre el conjunto de datos y construimos la matriz de confusión.
 
 ```{r}
-pred_rf <- predict(rf_classiffier, newdata = test_set, type = 'class')
+pred_rf <- predict(rf_classiffier, newdata = test_set, type = "class")
 
 confusionM <- table(test_set$class, pred_rf)
 confusionM
@@ -421,13 +425,15 @@ que el kernel es de tipo radial y gaussiano.
 ```{r}
 library(e1071)
 set.seed(18)
-svm_classiffier <- svm(class ~ ., data = training_set, 
-                       type = 'C-classification', kernel = 'radial')
+svm_classiffier <- svm(class ~ .,
+  data = training_set,
+  type = "C-classification", kernel = "radial"
+)
 ```
 La predicción y la matríz de confusión son entonces las mostradas a continuación.
 
 ```{r}
-pred_svm <- predict(svm_classiffier, newdata = test_set, type = 'class')
+pred_svm <- predict(svm_classiffier, newdata = test_set, type = "class")
 
 confusionM <- table(test_set$class, pred_svm)
 confusionM
@@ -460,11 +466,12 @@ accuracy_comp <- matrix(c(accuracy_rl, accuracy_knn, accuracy_dt, accuracy_rf, a
 barplot(accuracy_comp)
 
 barplot(accuracy_comp,
-main = "Accuracy Comparison",
-xlab = "Accuracy (%)",
-ylab = "Method",
-names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
-col = "darkred")
+  main = "Accuracy Comparison",
+  xlab = "Accuracy (%)",
+  ylab = "Method",
+  names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
+  col = "darkred"
+)
 ```
 
 ```{r}
@@ -472,33 +479,25 @@ perf_auc <- matrix(c(perf_rl_auc@y.values[[1]], perf_knn_auc@y.values[[1]], perf
 barplot(perf_auc)
 
 barplot(perf_auc,
-main = "AUC Comparison",
-xlab = "AUC (%)",
-ylab = "Method",
-names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
-col = "darkred")
+  main = "AUC Comparison",
+  xlab = "AUC (%)",
+  ylab = "Method",
+  names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
+  col = "darkred"
+)
 ```
 ## Análisis aprendizaje no supervisado<a name="unsupervised"></a>
 
-## Codificación de variables categóricas<a name="encoding"></a>
+En este apartado se analizará el dataset a través de algoritmos de aprendizaje no supervisado. En concreto, se probarán los algoritmos k-means y clustering jerárquico.
+Para ambos algoritmos, se seguirá el siguiente esquema:
 
-Para codificar las variables categóricas, se utilizará la función dummyVars() de la librería caret. Esta función devuelve un objeto de tipo "dummyVars" que contiene la información necesaria para codificar las variables categóricas. A continuación, se codificarán las variables categóricas y se eliminarán las variables originales.
+1. Representar la distribución inicial de los datos.
+2. Determinar el número de clusters óptimo.
+3. Representar la distribución de los datos en función del número de clusters.
+4. Calcular el promedio de las variables en función del cluster al que pertenecen.
+5. Calcular el accuracy del algoritmo.
 
-```{r}
-mushroom <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
-mushroom <- as.data.frame(mushroom)
-```
-
-Visualizamos las variables categóricas codificadas y las dimensiones del dataset.
-```{r}
-dim_mushroom <- dim(mushroom)
-print(dim_mushroom)
-str(mushroom)
-```
-
-
-Para poder trabajar con algoritmos no supervisados será necesario que las variables sean numéricas. Por lo tanto, se eliminarán las variables categóricas del dataset.
-
+Para poder trabajar con algoritmos no supervisados será necesario que las variables sean numéricas. Para ello, se eliminarán las variables categóricas del dataset.
 ```{r}
 numerical_columns <- mushroom[, numerical_features]
 ```
@@ -506,6 +505,11 @@ numerical_columns <- mushroom[, numerical_features]
 ### K-means<a name="kmeans"></a>
 
 En primer lugar, representaremos de forma gráfica la distribución inicial de los datos.
+
+```{r}
+mushroom <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
+mushroom <- as.data.frame(mushroom)
+```
 
 ```{r}
 df <- as.data.frame(numerical_columns)
@@ -537,11 +541,13 @@ plot(1:10, wss_per_k,
 Como se puede observar en la gráfica anterior, la suma de cuadrados internos disminuye a medida que aumenta el número de clusters. Sin embargo, a partir de 2 clusters, la disminución de la suma de cuadrados internos es muy pequeña. Por lo tanto, se decide utilizar 2 clusters.
 Comprobamos que tiene sentido utilizar 2 clusters, ya que conocemos que el dataset es binario.
 
+Generamos el modelo de k-means con 2 clusters.
+
 ```{r}
 km_model <- kmeans(df, center = 2, nstar = 20)
 ```
 
-A continuación, se representará la distribución de los datos en función de los clusters obtenidos.
+Representamos la distribución de los datos en función de los clusters obtenidos.
 ```{r}
 df$cluster <- factor(km_model$cluster)
 
@@ -552,20 +558,7 @@ plot_ly(df,
   add_markers(size = 1.5)
 ```
 
-Se puede observar que los champiñones de menor tamaño (incluyendo diámetro, altura y anchura) pertenecen al cluster 1 y los de mayor tamaño pertenecen al cluster 2.
-
-Considerando el clúster 1 como champiñones venenosos y el clúster 2 como champiñones comestibles, se puede observar que los champiñones comestibles son más grandes que los comestibles. Comprobaremos a través de medidas de bondad externas la eficacia del clustering.
-```{r}
-real_classes <- ifelse(mushroom$class == "e", 1, 2)
-predicted_classes <- km_model$cluster
-predicted_classes <- as.numeric(predicted_classes)
-```
-
-Calculamos el accuracy del clustering a través de los datos externos, para representar la proporción de datos correctamente clasificados. Obtenemos un accuracy del 69,7%, lo que indica que el clustering es eficaz.
-```{r}
-accuracy <- sum(real_classes == predicted_classes) / length(real_classes)
-print(accuracy)
-```
+Se puede observar que los champiñones de menor tamaño (incluyendo diámetro, altura y anchura) pertenecen al cluster 2 y los de mayor tamaño pertenecen al cluster 1.
 
 A continuación, calcularemos el valor promedio de las variables para cada cluster generado con el modelo de k-means.
 ```{r}
@@ -580,7 +573,7 @@ grouped_mushroom <- df %>%
 grouped_mushroom
 ```
 
-A partir de este momento, hemos decidido modificar el dataset actual debido a que para aplicar diversas técnicas como "silhouette" o "dendrogram" (para el caso de clustering jerárquico) es necesario que el dataset sea de menor tamaño.
+A partir de este momento, hemos decidido modificar el dataset actual debido a que para aplicar técnicas como "silhouette" o "dendrogram" (para el caso de clustering jerárquico) es necesario que el dataset sea de menor tamaño.
 Para mantener la proporción de los datos de cada clase, se reducirá el dataset haciendo uso de createDataPartition, manteniendo únicamente un 1% de los datos iniciales para el análisis.
 
 ```{r}
@@ -598,7 +591,7 @@ print(initial_class_prop)
 print(smaller_class_prop)
 ```
 
-Ya podemos trabajar con el dataset reducido. Comprobamos que el dataset tiene 611 ejemplos y 3 atributos.
+Ya podemos trabajar con el dataset reducido. Comprobamos que el dataset ahora cuenta con 611 ejemplos y 3 atributos.
 ```{r}
 smaller_df <- smaller_df[, numerical_features]
 dim(smaller_df)
@@ -626,7 +619,7 @@ Según la gráfica, podemos afirmar que el número óptimo de clusters es 2.
 Por último, visualizamos la distribución de los datos en función de los clusters obtenidos.
 
 ```{r}
-km_sm_model <- kmeans(smaller_df, center = 2, nstar = 20)
+km_sm_model <- kmeans(smaller_df, center = 2, nstart = 20)
 cluster <- factor(km_sm_model$cluster)
 
 plot_ly(smaller_df,
@@ -634,6 +627,19 @@ plot_ly(smaller_df,
   z = ~stem.width, color = ~cluster
 ) %>%
   add_markers(size = 1.5)
+```
+
+Por último, calculamos el valor promedio de las variables para cada cluster generado con el modelo de k-means.
+```{r}
+grouped_sm_mushroom <- smaller_df %>%
+  mutate(cluster = cluster) %>%
+  group_by(cluster) %>%
+  summarise(
+    mean_cap_diameter = mean(cap.diameter),
+    mean_stem_height = mean(stem.height),
+    mean_stem_width = mean(stem.width)
+  )
+grouped_sm_mushroom
 ```
 
 ### Clustering jerárquico<a name="hierarchical"></a>
@@ -652,7 +658,7 @@ plot(dend_modelo)
 ```
 
 Hasta ahora, hemos obtenido la jerarquía de los datos, pero lo que realmente nos interesa es la clasificación de los datos en función de los clusters.
-Cortaremos el dendrograma en un punto que nos interese para obtener los clusters. En este caso, hemos decidido cortar el dendrograma en 70.
+Cortaremos el dendrograma en un punto que nos interese para obtener los clusters. En este caso, hemos decidido cortar el dendrograma en 90 para obtener una visualización del dendograma cortado.
 ```{r}
 cut <- 0.9
 
@@ -662,21 +668,21 @@ dend_modelo %>%
   plot()
 ```
 
-Para obtener el número óptimo de cluster, haremos uso de la medida interna de bonda silhouette. Para ello, utilizaremos la función fviz_nbclust de factoextra.
+Para obtener el número óptimo de cluster, haremos uso de la medida interna de bondad silhouette. Para ello, utilizaremos la función fviz_nbclust de factoextra.
 
 ```{r}
 fviz_nbclust(smaller_df, FUNcluster = hcut, method = "silhouette")
 ```
 
-En este caso, hemos obtenido que el número óptimo de clusters sería 3.
+Comprobamos que en este caso, el número óptimo de clusters podría ser 2 o 3, ya que el valor de silhouette es muy similar para ambos casos. En este caso, hemos decidido utilizar 2 clusters para poder comparar posteriormente los resultados con los obtenidos con el algoritmo de k-means.
 
 Calculamos la agrupación del modelo en función del número de clusters que hemos decidido utilizar. Además, calculamos el promedio de los datos de cada cluster para ver si podemos sacar alguna conclusión.
 
 ```{r}
-cluster <- cutree(hc_model, k = 3)
+jq_cluster <- cutree(hc_model, k = 2)
 
 grouped_mushroom <- smaller_df %>%
-  mutate(cluster = cluster) %>%
+  mutate(cluster = jq_cluster) %>%
   group_by(cluster) %>%
   summarise_all(mean)
 grouped_mushroom
@@ -685,14 +691,46 @@ grouped_mushroom
 Visualizamos la agrupación de los datos en función de los clusters obtenidos.
 
 ```{r}
-cluster <- factor(cluster)
+jq_cluster <- factor(jq_cluster)
 
 plot_ly(smaller_df,
   x = ~cap.diameter, y = ~stem.height,
   z = ~stem.width,
-  color = ~cluster
+  color = ~jq_cluster
 ) %>%
   add_markers(size = 1.5)
 ```
 
-Podemos observar que el número de clusters obtenidos ha sido 3 debido a que existen datos muy dispersos que no se pueden agrupar en un mismo cluster.
+Con el objetivo de comparar los resultados obtenidos en los dos algoritmos, vamos a calcular el rendimiento de cada uno de ellos, haciendo uso del accuracy como medida de bondad externa.
+
+En primer lugar, calculamos el accuracy del modelo de k-means. Supondremos que la clase 1 es la clase "e" y la clase 2 es la clase "p".
+Para ello, obtenemos las clases reales y las clases predichas, y calculamos el accuracy.
+
+Volvemos a obtener el dataset reducido para poder tener las clases reales.
+```{r}
+smaller_df <- mushroom[split$Resample1, ]
+```
+
+```{r}
+real_classes <- ifelse(smaller_df$class == "e", 1, 2)
+predicted_classes <- km_sm_model$cluster
+predicted_classes <- as.numeric(predicted_classes)
+```
+
+```{r}
+accuracy <- sum(real_classes == predicted_classes) / length(real_classes)
+print(accuracy)
+```
+
+Hacemos lo mismo con el modelo de clustering jerárquico, pero en este caso, supondremos que la clase 1 es la clase "p" y la clase 2 es la clase "e".
+```{r}
+real_classes <- ifelse(smaller_df$class == "e", 2, 1)
+predicted_classes <- as.numeric(jq_cluster)
+```
+
+```{r}
+accuracy <- sum(real_classes == predicted_classes) / length(real_classes)
+print(accuracy)
+```
+
+Tras comparar los resultados obtenidos en los dos algoritmos, podemos afirmar que el modelo de clustering jerárquico ha obtenido un accuracy mayor para este dataset.
