@@ -56,12 +56,12 @@ Las variables con las que trabajaremos son las siguientes:
 # Cargar librerías<a name="libraries"></a>
 
 ```{r}
-install.packages("caret")
-install.packages("tidyverse")
-install.packages("plotly")
-install.packages("dplyr")
-install.packages("factoextra")
-install.packages("dendextend")
+#install.packages("caret")
+#install.packages("tidyverse")
+#install.packages("plotly")
+#install.packages("dplyr")
+#install.packages("factoextra")
+#install.packages("dendextend")
 ```
 ```{r}
 library(caret)
@@ -219,18 +219,16 @@ table(training_set$class)
 table(test_set$class)
 ```
 
-(Redactar) La regresión logística permite predecir el resultado de una variable categórica en función de las variables independientes o predictoras.
+La regresión logística permite predecir el resultado de una variable categórica en función de las variables independientes o predictoras.
 
 ```{r}
 rl_classiffier <- glm(class ~ ., family = binomial, data = training_set)
 summary(rl_classiffier)
 ```
 Una vez hemos aplicado la función glm(), obtenemos los valores residuales del modelo y los coeficientes de ajuste para cada una de las variables independientes.
-Además, obtenemos el p-value correspondiente a cada una de ellas. Las variables con dos o tres asteriscos aportan bastante relevancia como predictores;
-sin embargo, las variables que no poseen ninguno o uno son de menor relevancia.
+Además, obtenemos el p-value correspondiente a cada una de ellas. Las variables con dos o tres asteriscos aportan bastante relevancia como predictores; sin embargo, las variables que no poseen ninguno o uno son de menor relevancia.
 
-A continuación, procedemos a predecir las clases del conjunto de entrenamiento y de validación. Tomamos como umbral 0,5, de forma que
-si la probabilidad queda por encima de dicho umbral es que es comestible, pero si queda por debajo es que es venenoso.
+A continuación, procedemos a predecir las clases del conjunto de entrenamiento y de validación. Tomamos como umbral 0,5, de forma que si la probabilidad queda por encima de dicho umbral es que es comestible, pero si queda por debajo es que es venenoso.
 Por último crearemos la matriz de confusión para valorar los resultados de las predicciones.
 
 ```{r}
@@ -239,10 +237,10 @@ pred_train <- ifelse(pred_train > 0.5, "p", "e")
 pred_train <- factor(pred_train, levels = c("e", "p"), labels = c("e", "p"))
 
 confusion_m <- table(training_set$class, pred_train)
-confusion_m
+print(confusion_m)
 
 accuracy <- sum(diag(confusion_m)) / sum(confusion_m)
-accuracy
+print(accuracy)
 ```
 Una vez hemos visto el resultado que muestra la matriz de confusión, se observa que la predicción tiene una precisión del 77,8%, lo que puede resultar algo baja.
 
@@ -254,10 +252,10 @@ pred_test <- ifelse(pred_test > 0.5, "p", "e")
 pred_test <- factor(pred_test, levels = c("e", "p"), labels = c("e", "p"))
 
 confusion_m <- table(test_set$class, pred_test)
-confusion_m
+print(confusion_m)
 
 accuracy_rl <- sum(diag(confusion_m)) / sum(confusion_m)
-accuracy_rl
+print(accuracy_rl)
 ```
 
 Obtenemos una precisión con gran similitud a la del conjunto de training, un 77,3%.
@@ -271,8 +269,7 @@ perf_rl_auc <- performance(pred_rl_roc, "auc")
 print(perf_rl_auc@y.values[[1]])
 plot(perf_rl_roc)
 ```
-Observando la curva ROC resultante podemos comentar que se mantiene por encima de la diagonal, lo que es buena señal, pero se aproxima a ella, pudiendo haber
-proporcionado resultados mejores.
+Observando la curva ROC resultante podemos comentar que se mantiene por encima de la diagonal, lo que es buena señal, pero se aproxima a ella, pudiendo haber proporcionado resultados mejores.
 
 ### k-NN<a name="knn"></a>
 
@@ -289,7 +286,7 @@ dim_mushroom <- dim(mushroom_num)
 print(dim_mushroom)
 str(mushroom_num)
 ```
-
+De nuevo dividimos los datos en conjunto de entrenamiento y de validación. En este caso 0 se corresponde con comestible y 1 con venenosa.
 ```{r}
 library(caTools)
 set.seed(18)
@@ -308,19 +305,18 @@ Para comenzar a aplicar el clasificador del vecino más cercano, haremos uso de 
 library(class)
 set.seed(18)
 pred_knn <- knn(train = training_set_num[, -1], test = test_set_num[, -1], cl = training_set_num$class, k = 5)
+summary(pred_knn)
 ```
-Una vez tenemos los resultados de las predicciones, cosntruimos la matriz de confusión.
+Una vez tenemos los resultados de las predicciones, construimos la matriz de confusión.
 
 ```{r}
-summary(pred_knn)
+confusion_m <- table(test_set_num$class, pred_knn)
+confusion_m
 
-confusionM <- table(test_set_num$class, pred_knn)
-confusionM
-
-accuracy_knn <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_knn <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy_knn
 ```
-Como resultado de la matriz de confusión, tenemos una precisión del 99%, resultando ser mejor que en la regresión logística.
+Como resultado de la matriz de confusión, tenemos una precisión del 99%, resultando ser mejor que en la regresión logística aunque probablemente sobreajustado.
 
 ```{r}
 library(ROCR)
@@ -331,7 +327,7 @@ perf_knn_auc <- performance(pred_knn_roc, "auc")
 print(perf_knn_auc@y.values[[1]])
 plot(perf_knn_roc)
 ```
-Una vez obtenemos la curva ROC y el resultado del área de debajo de la misma, observamos que el resultado es muy positivo, ya que gráficamente se aproxima a la vertical.
+Una vez obtenemos la curva ROC y el resultado del área de debajo de la misma, observamos que el resultado es muy positivo, ya que gráficamente se aleja de la diagonal.
 
 ### Clasificación con Árbol de Decisión<a name="arbol"></a>
 
@@ -342,6 +338,8 @@ library(rpart)
 set.seed(18)
 dt_classiffier <- rpart(class ~ ., data = training_set)
 ```
+
+A continuación vamos a visualizar el árbol de decisión normal y el árbol de decisión después de aplicar el pruning.
 ```{r}
 library(rattle)
 tree2 <- rpart(class ~ ., training_set,
@@ -358,16 +356,16 @@ Construimos la matriz de confusión al igual que en los casos anteriores.
 ```{r}
 pred_dt <- predict(dt_classiffier, newdata = test_set, type = "class")
 
-confusionM <- table(test_set$class, pred_dt)
-confusionM
+confusion_m <- table(test_set$class, pred_dt)
+confusion_m
 
-accuracy_dt <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_dt <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy_dt
 ```
 
-Una vez tenemos el resultado para el valor de precisión en la predicción una vez aplicado el árbol de decisión, 83%,
+Una vez tenemos el resultado para el valor de precisión en la predicción aplicando el árbol de decisión, 83%,
 pasamos a aplicar de forma visual la construcción de la gráfica de la curva ROC y el cálculo del AUC. En este caso,
-continúa siendo mejor resultado que el obtenido mediante la regresión logística, pero quedando por debajo que el
+continúa siendo mejor resultado que el obtenido mediante la regresión logística, pero quedando por debajo del
 resultado obtenido al aplicar KNN.
 
 ```{r}
@@ -380,7 +378,7 @@ print(perf_dt_auc@y.values[[1]])
 plot(perf_dt_roc)
 ```
 
-### Random Forests classiffier<a name="random"></a>
+### Clasificador Random Forest<a name="random"></a>
 
 Comenzamos aplicando el clasificador de Random Forest mediante la función llamada de la misma forma; es decir, randomForest().
 En esta función, el valor correspondiente al parámetro ntree indica la cantidad de árboles de decisión que formarán parte del clasificador.
@@ -396,15 +394,15 @@ Realizamos las predicciones sobre el conjunto de datos y construimos la matriz d
 ```{r}
 pred_rf <- predict(rf_classiffier, newdata = test_set, type = "class")
 
-confusionM <- table(test_set$class, pred_rf)
-confusionM
+confusion_m <- table(test_set$class, pred_rf)
+confusion_m
 
-accuracy_rf <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_rf <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy_rf
 ```
 
 De forma similar al clasificador KNN, obtenemos un valor de precisión del 99%.
-Definimos la curva ROC para este caso y realizamos el cálculo del área bajo la curva, los cuales nos simbolizan su altísima precisión.
+Definimos la curva ROC para este caso y realizamos el cálculo del área bajo la curva, los cuales nos simbolizan su altísima precisión probablemente causada por sobreajuste.
 
 ```{r}
 library(ROCR)
@@ -418,7 +416,7 @@ plot(perf_rf_roc)
 
 ### Kernel SVM Classifier
 
-Comenzamos a aplicar el clasificador Máquina de Soporte Vectorial haciendo uso de la función svm().
+Para aplicar el clasificador Máquina de Soporte Vectorial hacemos uso de la función svm().
 En esta función, los valores de los parámetros type y kernel hacen referencia al tipo de clasificador; es decir,
 que el kernel es de tipo radial y gaussiano. 
 
@@ -435,14 +433,14 @@ La predicción y la matríz de confusión son entonces las mostradas a continuac
 ```{r}
 pred_svm <- predict(svm_classiffier, newdata = test_set, type = "class")
 
-confusionM <- table(test_set$class, pred_svm)
-confusionM
+confusion_m <- table(test_set$class, pred_svm)
+confusion_m
 
-accuracy_svm <- sum(diag(confusionM)) / sum(confusionM)
+accuracy_svm <- sum(diag(confusion_m)) / sum(confusion_m)
 accuracy_svm
 ```
 
-Como se puede observar el valor de la predicción en este caso resulta ser del 95%.
+Como se puede observar el valor de la predicción en este caso resulta ser del 95%, un resultado bueno que no muestra señales de sobreajuste.
 Para finalizar, construimos la curva ROC correspondiente en este caso 
 
 ```{r}
@@ -457,33 +455,31 @@ plot(perf_svm_roc)
 
 ### Conclusiones
 
-Una vez aplicados los cinco distintos métodos de clasificación sobre nuestro dataset tras realizar el preprocesamiento, podemos concluir diciendo que los clasificadores de KNN y Random Forest son los que poseen mayor precisión
-y, por tanto, menor error de predicción. Sin embargo, con los resultados obtenidos por parte de ambos podemos detectar un posible sobreajuste, no beneficiando al modelo. Por esta razón, creemos que resulta más beneficioso sacrificar
-parte del valor de precisión, teniendo en cuenta algunos valores de falsos positivos y falsos negativos, como ocurre en el caso del clasificador de la Máquina de Soporte Vectorial, aprovechando así su capacidad de mayor generalización.
+Una vez aplicados los cinco distintos métodos de clasificación sobre nuestro dataset tras realizar el preprocesamiento, podemos concluir diciendo que los clasificadores de KNN y Random Forest son los que poseen mayor precisión y, por tanto, menor error de predicción. Sin embargo, con los resultados obtenidos por parte de ambos podemos detectar un posible sobreajuste, no beneficiando al modelo. Por esta razón, creemos que resulta más beneficioso sacrificar parte del valor de precisión, teniendo en cuenta algunos valores de falsos positivos y falsos negativos, como ocurre en el caso del clasificador de la Máquina de Soporte Vectorial, aprovechando así su capacidad de mayor generalización.
+
+En las siguientes gráficas podemos comparar los niveles de precisión y AUC de los diferentes clasificadores.
 
 ```{r}
 accuracy_comp <- matrix(c(accuracy_rl, accuracy_knn, accuracy_dt, accuracy_rf, accuracy_svm), ncol = 5)
-barplot(accuracy_comp)
 
 barplot(accuracy_comp,
   main = "Accuracy Comparison",
   xlab = "Accuracy (%)",
   ylab = "Method",
   names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
-  col = "darkred"
+  col = "#7fd6d9"
 )
 ```
 
 ```{r}
 perf_auc <- matrix(c(perf_rl_auc@y.values[[1]], perf_knn_auc@y.values[[1]], perf_dt_auc@y.values[[1]], perf_rf_auc@y.values[[1]], perf_svm_auc@y.values[[1]]), ncol = 5)
-barplot(perf_auc)
 
 barplot(perf_auc,
   main = "AUC Comparison",
   xlab = "AUC (%)",
   ylab = "Method",
   names.arg = c("RL", "K-NN", "DT", "RF", "SVM"),
-  col = "darkred"
+  col = "#7fd6d9"
 )
 ```
 ## Análisis aprendizaje no supervisado<a name="unsupervised"></a>
