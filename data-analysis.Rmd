@@ -6,6 +6,10 @@ output:
   pdf_document: default
   html_notebook: default
 ---
+<style>
+body {
+text-align: justify}
+</style>
 
 # Índice   
 1. [Introducción](#introduction) \
@@ -26,17 +30,22 @@ output:
 # Introducción<a name="introduction"></a>
 
 Este trabajo se centra en el análisis de un conjunto de datos que contiene información sobre 61069 champiñones diferentes. Los datos han sido obtenidos de Kaggle y cada una de las instancias incluye 21 variables que describen diferentes aspectos de los champiñones, como su forma, tamaño y hábitat. En estas variables se encuentra inlcuida la clase de cada champiñón, indicando si es venenoso o comestible.
+
 Antes de comenzar el análisis, es necesario realizar una fase de preprocesamiento de los datos. Esta fase tiene como objetivo preparar los datos para su análisis y obtener mayor conocimiento sobre estos. Durante esta fase, realizaremos tareas como visualizar los datos, detectar y tratar valores faltantes, o normalizar los datos.
-Una vez preparados los datos, procederemos a realizar el análisis. Para ello, utilizaremos tanto técnicas de aprendizaje supervisado como no supervisado. El aprendizaje supervisado implica entrenar un modelo con datos etiquetados, es decir, que ya conocemos la clase de cada instancia. Una vez entrenado el modelo, podemos utilizarlo para predecir la clase de nuevas instancias. En este caso, utilizaremos diferentes algoritmos de clasificación para evaluar diferentes modelos.
+Una vez preparados los datos, procederemos a realizar el análisis. Para ello, utilizaremos tanto técnicas de aprendizaje supervisado como no supervisado.
+
+El aprendizaje supervisado implica entrenar un modelo con datos etiquetados, es decir, que ya conocemos la clase de cada instancia. Una vez entrenado el modelo, podemos utilizarlo para predecir la clase de nuevas instancias. En este caso, utilizaremos diferentes algoritmos de clasificación para evaluar diferentes modelos.
+
 El aprendizaje no supervisado, por otro lado, no requiere de datos etiquetados. En este caso, el objetivo es agrupar las instancias en diferentes grupos de forma que las instancias de un mismo grupo sean similares entre sí y diferentes a las de los demás grupos. Utilizaremos dos algoritmos de clustering para evaluar diferentes modelos. Además, cabe destacar, que en nuestro caso contamos con un conocimiento a priori de los datos, ya que conocemos la clase de cada instancia. Por tanto, podemos utilizar este conocimiento para evaluar los modelos de clustering.
 
 A continuación se detalla los posibles valores que pueden tomar las variables del dataset:
+
 **1. class:** edible=e, poisonous=p \
 **2. cap-diameter:** float number in cm \
 **3. cap-shape:** bell=b, conical=c, convex=x, flat=f, knobbed=k, sunken=s \
 **4. cap-surface:** fibrous=f, grooves=g, scaly=y, smooth=s \
 **5. cap-color:** brown=n, buff=b, cinnamon=c, gray=g, green=r, pink=p, purple=u, red=e, white=w, yellow=y \
-**6. does.bruise.or.bleed:** bruises-or-bleeding=t,no=f
+**6. does.bruise.or.bleed:** bruises-or-bleeding=t,no=f \
 **7. gill-attachment:** attached=a, descending=d, free=f, notched=n \
 **8. gill-spacing:** close=c, crowded=w, distant=d \
 **9. gill-color:** black=k, brown=n, buff=b, chocolate=h, gray=g, green=r, orange=o, pink=p, purple=u, red=e, white=w, yellow=y \
@@ -54,13 +63,19 @@ A continuación se detalla los posibles valores que pueden tomar las variables d
 **21. season:** spring=s, summer=u, autumn=a, winter=w \
 
 # Autores<a name="authors"></a>
-Este trabajo ha sido realizado por: 
-- Ana Diaz
-- Deyan Rosenov
-- Javier Vilariño
-- María Isabel Ramos
+Este trabajo ha sido realizado por:
 
-Todos los ingrantes del grupo hemos realizado de forma conjunta la visualización y el preprocesamiento de los datos. Por otro lado, Ana y Deyan se ha encargado de realizar el aprendizaje supervisado, mientras que Javier y María Isabel se han encargado de realizar el aprendizaje no supervisado.
+* Ana Díaz Muñoz
+
+* María Isabel Ramos Blanco
+
+* Deyan Rosenov Stanchev
+
+* Javier Vilariño Mayo
+
+
+Todos los integrantes del grupo han realizado de forma conjunta la visualización y el preprocesamiento de los datos. Ana y Deyan se ha encargado de realizar el aprendizaje supervisado, mientras que Javier y María Isabel se han encargado de realizar el aprendizaje no supervisado.
+Por otro lado, todos los componentes han investigado acerca del clustering utilizado en BigML.
 
 
 # Cargar librerías<a name="libraries"></a>
@@ -109,14 +124,14 @@ Según el resultado obtenido anteriormente, no existen valores nulos en el datas
 mushroom[mushroom == ""] <- NA
 ```
 
-Comprobamos que se han sustituido correctamente los valores vacíos por NA, y ahora si podemos comprobar la cantidad de valores nulos que hay en cada variable.
+Comprobamos que se han sustituido correctamente los valores vacíos por NA, pudiendo comprobar la cantidad de valores nulos que hay en cada variable.
 Esta información nos ayudará a decidir si será conveniente eliminar dichas variables o no.
 ```{r}
 colSums(is.na(mushroom))
 ```
 Podemos observar que existen 5 variables donde más del 50% de los valores son nulos. Estas son: stem.surface, veil.color, spore.print.color, stem.root, veil.type.
 
-En este caso, decidimos eliminar aquellas variables que tenían más del 50% de sus valores faltantes. La razón de esta decisión es que, si decidimos imputar (es decir, reemplazar) los valores faltantes, estaríamos inventando demasiados datos. Imputar valores faltantes significa reemplazar los valores faltantes con algún valor que estimemos adecuado. Sin embargo, si una variable tiene más del 50% de sus valores faltantes, significa que estaríamos reemplazando más de la mitad de los valores de esa variable. Esto nos llevaría a tener un conjunto de datos con demasiados valores inventados, lo que podría afectar la precisión de nuestro análisis.
+En este caso, decidimos eliminar aquellas variables que cuentan con más del 50% de sus valores faltantes. La razón de esta decisión es que, si decidimos imputar los valores faltantes, estaríamos inventando demasiados datos. Imputar valores faltantes significa reemplazar los valores faltantes con algún valor que estimemos adecuado. Sin embargo, si una variable tiene más del 50% de sus valores faltantes, significa que estaríamos reemplazando más de la mitad de los valores de esa variable. Esto nos llevaría a tener un conjunto de datos con demasiados valores inventados, lo que podría afectar la precisión de nuestro análisis.
 Para ello, en primer lugar, obtendremos el nombre de las columnas que queremos eliminar.
 
 ```{r}
@@ -154,11 +169,11 @@ for (i in categorical_features) {
 }
 ```
 
-Tras visualizar los histogramas de cada variable, obtenemos a las siguientes conclusiones:
+Tras visualizar los histogramas de cada variable, obtenemos las siguientes conclusiones:
 
 * La variable dependiente "class" está balanceada, es decir, la frecuencia de aparición de "e" (edible) y "p" (poisonous) es similar, en una proporción de 44,5% y 55,5% respectivamente. Por lo tanto, no es necesario realizar un balanceo de la variable dependiente, permitiendo aplicar la medida de evaluación "accuracy" para evaluar el modelo.
 * Siguen existiendo valores NA en algunas variables, pero estos serán imputados posteriormente con la moda de cada variable.
-* La variable ring-type tiene 8 posibles valores, pero en casi un 80% de los casos, el valor es "f", por lo que quizás se podría eliminar esta variable en un futuro, ya que parece que aporta información relevante. Más adelante la analizaremos en profundidad.
+* La variable ring-type tiene 8 posibles valores, pero en el 80% de los casos, el valor es "f", por lo que quizás se podría eliminar esta variable en un futuro, ya que parece que aporta información irrelevante. Más adelante la analizaremos en profundidad.
 
 A continuación, seguiremos con el análisis de las variables numéricas, donde visualizaremos su distribución respecto a la clase a través de una gráfica generada con "featurePlot". Esta requiere que la variable objetivo sea de tipo factor, por lo que hacemos la conversión.
 ```{r}
@@ -199,9 +214,9 @@ colSums(is.na(mushroom))
 
 ## Escalado de variables numéricas<a name="scaling"></a>
 
-Con el objetivo de que todas las variables tengan la misma escala para evitar que una variable tenga más peso que otra, se escalarán las variables numéricas.
-Para realizar el escalado las variables numéricas, se utilizará la función preProcess() de la librería caret. Esta función devuelve un objeto de tipo "preProcess" que contiene la información necesaria para escalar las variables numéricas. 
-A continuación, se realizara el escalado y se sustituiran las variables numéricas originales por las escaladas.
+Con el objetivo de que todas las variables tengan la misma escala y evitar que una variable tenga más peso que otra, se escalarán las variables numéricas.
+Para realizar este escalado, se utilizará la función preProcess() de la librería caret. Esta función devuelve un objeto de tipo "preProcess" que contiene la información necesaria para escalar las variables numéricas. 
+A continuación, se realizará el escalado y se sustituirán las variables numéricas originales por las escaladas.
 ```{r}
 range_numeric <- preProcess(mushroom[, numerical_features], method = c("range"))
 mushroom[, numerical_features] <- predict(range_numeric, newdata = mushroom[, numerical_features])
@@ -216,11 +231,17 @@ str(mushroom)
 
 Para trabajar con el dataset mediante el aprendizaje supervisado; es decir, utilizando datos que son etiquetados mediante la intervención de un ser humano, utilizaremos diferentes tipos de clasificadores, algunos de ellos ya trabajados durante las clases prácticas de la asignatura y otros que eran desconocidos para nosotros y sobre los cuales hemos tenido que investigar anteriormente sobre su funcionamiento en R.
 Los algoritmos de clasificación que hemos seleccionado y los cuales vamos a aplicar son:
+
   1. Regresión logística.
+  
   2. KNN o el Vecino más cercano.
+  
   3. Árboles de decisión.
+  
   4. Random Forest.
+  
   5. MSV o Máquina de Soporte Vectorial.
+  
 Una vez aplicados cada uno de los clasificadores, los compararemos entre sí y seleccionaremos el o los algoritmos que mayor precisión proporcionen sin llegar al sobreajuste, tratando de buscar que el resultado final sea generalizado para los datos.
 
 
@@ -531,26 +552,20 @@ barplot(perf_auc,
 En este apartado se analizará el dataset a través de algoritmos de aprendizaje no supervisado. En concreto, se probarán los algoritmos k-means y clustering jerárquico.
 Para ambos algoritmos, se seguirá el siguiente esquema:
 
-1. Representar la distribución inicial de los datos.
-2. Determinar el número de clusters óptimo.
-3. Representar la distribución de los datos en función del número de clusters.
-4. Calcular el promedio de las variables en función del cluster al que pertenecen.
-5. Calcular el accuracy del algoritmo.
+Para ambos algoritmos se llevará a cabo el siguiente proceso:
+
+1. Se representará gráficamente la distribución inicial de los datos en el dataset.
+2. Se determinará el número óptimo de clústeres a utilizar para dividir los datos de forma adecuada.
+3. Se representará gráficamente la distribución de los datos en función del número de clústeres elegido.
+4. Se calculará el promedio de cada una de las variables en el dataset para cada uno de los clústeres resultantes.
+5. Finalmente, y gracias a tener información a priori de la clase de cada champiñón, se calculará el "accuracy" del algoritmo, midiendo cómo de bien se está realizando la tarea de dividir los datos en clústeres de forma adecuada.
 
 Para poder trabajar con algoritmos no supervisados será necesario que las variables sean numéricas. Para ello, se eliminarán las variables categóricas del dataset.
 ```{r}
 numerical_columns <- mushroom[, numerical_features]
 ```
 
-### K-means<a name="kmeans"></a>
-
-En primer lugar, representaremos de forma gráfica la distribución inicial de los datos.
-
-```{r}
-mushroom <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
-mushroom <- as.data.frame(mushroom)
-```
-
+Antes de comenzar con los algoritmos no supervisados, representaremos de forma gráfica la distribución inicial de los datos a través de un diagrama de dispersión 3D, dónde cada punto representa un champiñón y las variables que se representan son el diámetro del sombrero, la altura del tallo y el ancho del tallo. Cada variable está normalizada entre 0 y 1.
 ```{r}
 df <- as.data.frame(numerical_columns)
 
@@ -561,8 +576,17 @@ plot_ly(df,
   add_markers(size = 1.5)
 ```
 
-Para aplicar el algoritmo kmeans se utilizará la función kmeans() de la librería cluster. Será necesario determinar el número de clusters óptimo.
-Para ello, se utilizará la función "kmeans" con diferentes valores de "centers" y se calculará la suma de cuadrados internos (within groups sum of squares) para cada valor de "centers". A continuación, se representará la suma de cuadrados internos vs. número de clusters.
+### K-means<a name="kmeans"></a>
+
+El algoritmo k-means es un método de clustering que permite dividir un conjunto de datos en k grupos o clústeres de manera que los puntos dentro de un mismo clústeres sean similares entre sí y diferentes a los puntos de los demás clústeres. La función kmeans() de la librería clústeres una implementación del algoritmo k-means en R.
+
+Para utilizar la función kmeans(), es necesario especificar el número de clústeres que se desean obtener, que se indica a través del parámetro "centers". 
+
+Por otro lado, el parámetro "nstar" indica el número de veces que se desea realizar el proceso de clustering. Cada vez que se ejecuta el proceso, se utiliza un conjunto diferente de semillas iniciales para los centroides de los clústeres y se obtiene un resultado diferente. Al especificar un valor para "nstart" mayor que 1, se obtienen varios resultados diferentes y se selecciona el que minimiza la suma de cuadrados total. Por tanto, establecemos "nstart" a 20 para que se realice el proceso 20 veces y se obtenga un resultado más robusto.
+
+Una vez que se ha ejecutado la función con un determinado valor de "centers", se puede calcular la suma de cuadrados internos (within groups sum of squares) para ese valor de "centers". La suma de cuadrados internos es una medida de la variabilidad de los datos dentro de cada cluster. Cuanto mayor sea la suma de cuadrados internos, más dispersos estarán los datos dentro del clústery, por tanto, menos homogéneo será el cluster.
+
+Para determinar el número óptimo de clústeres, se puede utilizar el método del codo, que consiste en representar la suma de cuadrados internos en función del número de clústeres y seleccionar el número de clústeres en el que se produce un "codo" en la gráfica. Este "codo" suele corresponder al punto en el que la disminución de la suma de cuadrados internos se vuelve más lenta y, por tanto, a partir del cual no se obtienen mejoras significativas en la calidad del clustering.
 
 ```{r}
 wss_per_k <- 0
@@ -578,18 +602,17 @@ plot(1:10, wss_per_k,
 )
 ```
 
-Como se puede observar en la gráfica anterior, la suma de cuadrados internos disminuye a medida que aumenta el número de clusters. Sin embargo, a partir de 2 clusters, la disminución de la suma de cuadrados internos es muy pequeña. Por lo tanto, se decide utilizar 2 clusters.
-Comprobamos que tiene sentido utilizar 2 clusters, ya que conocemos que el dataset es binario.
+Como se puede observar en la gráfica anterior, la suma de cuadrados internos disminuye a medida que aumenta el número de clústeres. Sin embargo, a partir de 2 clústeres, la disminución de la suma de cuadrados internos es más pequeña. Por lo tanto, se decide hacer uso 2 clústeres. En este caso específico, tiene sentido utilizar 2 clústeres, ya que conocemos que el dataset es binario.
 
-Generamos el modelo de k-means con 2 clusters.
+Una vez determinado el número de clústeres, generamos el modelo de k-means.
 
 ```{r}
 km_model <- kmeans(df, center = 2, nstar = 20)
 ```
 
-Representamos la distribución de los datos en función de los clusters obtenidos.
+Para poder visualizar los resultados, se añade una nueva columna al dataset con el número de clúster al que pertenece cada observación. Una vez añadida, se puede representar la distribución de los datos en función de los clústeres obtenidos.
 ```{r}
-df$cluster <- factor(km_model$cluster)
+df$cluster<- factor(km_model$cluster)
 
 plot_ly(df,
   x = ~cap.diameter, y = ~stem.height,
@@ -598,9 +621,9 @@ plot_ly(df,
   add_markers(size = 1.5)
 ```
 
-Se puede observar que los champiñones de menor tamaño (incluyendo diámetro, altura y anchura) pertenecen al cluster 2 y los de mayor tamaño pertenecen al cluster 1.
+Se puede observar que los champiñones de menor tamaño (en diámetro, altura y anchura) pertenecen al clúster 2 y los de mayor tamaño pertenecen al clúster 1.
 
-A continuación, calcularemos el valor promedio de las variables para cada cluster generado con el modelo de k-means.
+A continuación, calcularemos el valor promedio de las variables para cada clúster generado con el modelo de k-means. Para ello, utilizaremos la función group_by() de la librería dplyr para agrupar los datos por clúster y la función summarise() para calcular el valor promedio de cada variable. Es importante destacar que, en este caso, los datos están normalizados, por lo que el valor promedio de cada variable no tiene un significado real. Sin embargo, nos permite comparar los valores de cada variable para cada cluster.
 ```{r}
 grouped_mushroom <- df %>%
   group_by(cluster) %>%
@@ -613,10 +636,17 @@ grouped_mushroom <- df %>%
 grouped_mushroom
 ```
 
+Observamos que los valores del clúster 1 son mayores que los del clúster 2, lo que indica que los champiñones del clúster 1 son de mayor tamaño que los del clúster 2. 
+
 A partir de este momento, hemos decidido modificar el dataset actual debido a que para aplicar técnicas como "silhouette" o "dendrogram" (para el caso de clustering jerárquico) es necesario que el dataset sea de menor tamaño.
-Para mantener la proporción de los datos de cada clase, se reducirá el dataset haciendo uso de createDataPartition, manteniendo únicamente un 1% de los datos iniciales para el análisis.
+La función createDataPartition() de la librería caret en R permite dividir un conjunto de datos en dos grupos, uno de entrenamiento y otro de validación, de manera estratificada, es decir, manteniendo la proporción de elementos de cada clase en ambos grupos. En este caso, se está especificando que se desea mantener únicamente el 1% de los datos iniciales para el análisis, lo que implica que se está utilizando createDataPartition() para reducir el tamaño del conjunto de datos en lugar de para dividirlo en dos grupos. Al utilizar createDataPartition() de esta manera, se mantiene la proporción de elementos de cada clase en el conjunto de datos reducido.
+
+Antes de reducir el dataset, es necesario convertir las variables categóricas en numéricas a través de variables dummy. Para ello, utilizamos la función dummyVars() de la librería caret para crear un objeto de tipo dummyVars y la función predict() para crear un nuevo dataset con las variables dummy.
 
 ```{r}
+mushroom <- dummyVars(" ~ .", data = mushroom, fullRank = TRUE) %>% predict(mushroom)
+mushroom <- as.data.frame(mushroom)
+
 set.seed(42)
 split <- createDataPartition(mushroom$class, p = 0.01)
 smaller_df <- mushroom[split$Resample1, ]
@@ -631,13 +661,25 @@ print(initial_class_prop)
 print(smaller_class_prop)
 ```
 
-Ya podemos trabajar con el dataset reducido. Comprobamos que el dataset ahora cuenta con 611 ejemplos y 3 atributos.
+Mostramos de forma gráfica las nuevas proporciones de la variable dependiente "class" en el dataset reducido.
+```{r}
+print(ggplot(smaller_df, aes_string(x = smaller_df$class)) +
+  geom_bar(fill = "#7fd6d9") +
+  geom_text(stat = "count", aes(label = scales::percent(..count.. / nrow(smaller_df)), vjust = -0.25)) +
+  labs(x = i, y = "Percentage") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+```
+
+
+Una vez reducido el dataset, vamos a eliminar las variables categóricas para poder aplicar técnicas de clustering.
 ```{r}
 smaller_df <- smaller_df[, numerical_features]
 dim(smaller_df)
 ```
 
-En primer lugar, visualizaremos la distribución inicial de los datos a través de una gráfica 3D.
+Tras ejecutar la celda anterior se puede observar que el dataset ha pasado a tener 611 observaciones y 3 variables.
+
+Como nos encontramos ante un dataset "nuevo", en primer lugar, visualizaremos la distribución inicial de los datos a través de una gráfica 3D.
 
 ```{r}
 plot_ly(smaller_df,
@@ -647,16 +689,18 @@ plot_ly(smaller_df,
   add_markers(size = 1.5)
 ```
 
-A continuación, vamos a estudiar cuál sería el número óptimo de clusters para el dataset reducido haciendo uso de la medida de bondad interna "silhouette". Para ello, utilizaremos la función fviz_nbclust de factoextra.
-Silhouette es una medida que sirve para validar el número de clusters. Se calcula como la diferencia entre la distancia media de un punto a los puntos de su propio cluster y la distancia media de un punto a los puntos de su cluster más cercano.
+A continuación, vamos a estudiar cuál sería el número óptimo de clústeres para el dataset reducido haciendo uso de la medida de bondad interna "silhouette". Para ello, utilizaremos la función fviz_nbclust de factoextra.
 
+La medida silhouette toma valores entre -1 y 1. Un valor cercano a 1 indica que el punto está bien asignado al clúster y los puntos del clúster son muy similares entre sí. Un valor cercano a 0 indica que el punto está en un "área gris" y no está claramente asignado a ninguno de los dos clústeres. Un valor cercano a -1 indica que el punto está mal asignado al clúster y sería más apropiado para otro clúster.
+
+La función fviz_nbclust() de la librería factoextra en R permite visualizar la medida silhouette para diferentes valores de "k" (número de clústeres) y ayudar a determinar el número óptimo de clústeres. Al utilizar esta función, se puede obtener un gráfico en el que se representa la medida silhouette en función del número de clústeres y seleccionar el valor de "k" en el que se obtiene el mayor valor de silhouette.
 ```{r}
 fviz_nbclust(smaller_df, FUNcluster = kmeans, method = "silhouette")
 ```
 
-Según la gráfica, podemos afirmar que el número óptimo de clusters es 2.
+Según la gráfica, podemos afirmar que el número óptimo de clústeres es 2, ya que es el valor de "k" que maximiza la medida silhouette. También podemos observar que el valor de silhouette para "k" = 3 es cercano al obtenido para "k" = 2. Esto puede ser debido a que nuestro dataset, pese a ser binario, cuenta con datos muy dispersos.
 
-Por último, visualizamos la distribución de los datos en función de los clusters obtenidos.
+Por último, visualizamos la distribución de los datos en función de los clústeres obtenidos.
 
 ```{r}
 km_sm_model <- kmeans(smaller_df, center = 2, nstart = 20)
@@ -669,7 +713,7 @@ plot_ly(smaller_df,
   add_markers(size = 1.5)
 ```
 
-Por último, calculamos el valor promedio de las variables para cada cluster generado con el modelo de k-means.
+Por último, calculamos el valor promedio de las variables para cada clúster generado con el modelo de k-means para el dataset reducido.
 ```{r}
 grouped_sm_mushroom <- smaller_df %>%
   mutate(cluster = cluster) %>%
@@ -684,39 +728,44 @@ grouped_sm_mushroom
 
 ### Clustering jerárquico<a name="hierarchical"></a>
 
-A continuación, vamos a aplicar el algoritmo de clustering jerárquico a nuestro dataset reducido. Para ello, utilizaremos la función hclust. Primero, calculamos la distancia entre los puntos del dataset.
+Clustering jerárquico es un tipo de algoritmo de clustering que se utiliza para dividir a un conjunto de datos en grupos (clústeres) de forma que los datos en el mismo clústersean similares entre sí. La función hclust es una función en R que se utiliza para realizar clustering jerárquico.
+ 
+Antes de aplicar el algoritmo hclust, es necesario calcular las distancias entre los puntos del conjunto de datos, para ello, utilizaremos la función dist de R. La función dist() calcula la distancia entre los puntos del conjunto de datos y devuelve una matriz de distancias. Por defecto, la función dist() utiliza la distancia euclídea para calcular las distancias entre los puntos del conjunto de datos.
+
+Cabe destacar, que la función hclust hace uso por defecto del cáculo de distancia entre clústeres basado en el método de "Complete". Este método de cálculo de distancia entre clústeres se basa en la distancia entre los puntos más lejanos de cada cluster.
 ```{r}
 distance <- dist(smaller_df)
 hc_model <- hclust(distance)
 ```
 
-Representamos el dendrograma para visualizar la distribución de los datos en función de los clusters obtenidos.
-
+Representamos el dendrograma para visualizar la distribución de los datos en función de los clústeres obtenidos.
 ```{r}
 dend_modelo <- as.dendrogram(hc_model)
-plot(dend_modelo)
+plot(dend_modelo, ylab = "Similarity")
 ```
 
-Hasta ahora, hemos obtenido la jerarquía de los datos, pero lo que realmente nos interesa es la clasificación de los datos en función de los clusters.
-Cortaremos el dendrograma en un punto que nos interese para obtener los clusters. En este caso, hemos decidido cortar el dendrograma en 90 para obtener una visualización del dendograma cortado.
+Hasta ahora, hemos obtenido la jerarquía de los datos, pero lo que realmente nos interesa es la clasificación de los datos en función de los clústeres.
+Cortaremos el dendrograma en un punto que nos interese para obtener los clústeres. En este caso, y a modo de prueba, hemos decidido cortar el dendrograma en 90 para obtener una visualización del dendograma cortado.
 ```{r}
 cut <- 0.9
 
 dend_modelo %>%
   color_branches(h = cut) %>%
   color_labels(h = cut) %>%
-  plot()
+  plot(ylab = "Similarity")
 ```
 
-Para obtener el número óptimo de cluster, haremos uso de la medida interna de bondad silhouette. Para ello, utilizaremos la función fviz_nbclust de factoextra.
+Para obtener el número óptimo de clúster, haremos uso de la medida interna de bondad silhouette. Para ello, utilizaremos la función fviz_nbclust de factoextra al igual que con k-means.
 
 ```{r}
 fviz_nbclust(smaller_df, FUNcluster = hcut, method = "silhouette")
 ```
 
-Comprobamos que en este caso, el número óptimo de clusters podría ser 2 o 3, ya que el valor de silhouette es muy similar para ambos casos. En este caso, hemos decidido utilizar 2 clusters para poder comparar posteriormente los resultados con los obtenidos con el algoritmo de k-means.
+Comprobamos que en este caso, el número óptimo de clústeres podría ser 2 o 3, ya que el valor de silhouette es muy similar para ambos casos. En este caso, hemos decidido utilizar 2 clústeres para poder comparar posteriormente los resultados con los obtenidos con el algoritmo de k-means.
 
-Calculamos la agrupación del modelo en función del número de clusters que hemos decidido utilizar. Además, calculamos el promedio de los datos de cada cluster para ver si podemos sacar alguna conclusión.
+Para generar el modelo de clustering jerárquico, utilizaremos la función cutree de R. Esta función nos permite generar el modelo de clustering jerárquico en función del número de clústeres que queramos obtener.
+
+Calculamos la agrupación del modelo en función del número de clústeres que hemos decidido utilizar, y calculamos el valor promedio de las variables para cada clústergenerado.
 
 ```{r}
 jq_cluster <- cutree(hc_model, k = 2)
@@ -728,10 +777,10 @@ grouped_mushroom <- smaller_df %>%
 grouped_mushroom
 ```
 
-Visualizamos la agrupación de los datos en función de los clusters obtenidos.
+Visualizamos la agrupación de los datos en función de los clústeres obtenidos a partir del modelo de clustering jerárquico.
 
 ```{r}
-jq_cluster <- factor(jq_cluster)
+jq_cluster<- factor(jq_cluster)
 
 plot_ly(smaller_df,
   x = ~cap.diameter, y = ~stem.height,
@@ -746,7 +795,7 @@ Con el objetivo de comparar los resultados obtenidos en los dos algoritmos, vamo
 En primer lugar, calculamos el accuracy del modelo de k-means. Supondremos que la clase 1 es la clase "e" y la clase 2 es la clase "p".
 Para ello, obtenemos las clases reales y las clases predichas, y calculamos el accuracy.
 
-Volvemos a obtener el dataset reducido para poder tener las clases reales.
+Primero necesitamos volver a obtener el dataset reducido para poder tener las clases reales.
 ```{r}
 smaller_df <- mushroom[split$Resample1, ]
 ```
@@ -773,4 +822,6 @@ accuracy <- sum(real_classes == predicted_classes) / length(real_classes)
 print(accuracy)
 ```
 
-Tras comparar los resultados obtenidos en los dos algoritmos, podemos afirmar que el modelo de clustering jerárquico ha obtenido un accuracy mayor para este dataset.
+Tras comparar los resultados obtenidos en los dos algoritmos, podemos afirmar que el modelo de clustering jerárquico ha obtenido un accuracy mayor para este dataset, obteniendo un accuracy del 98% frente al 70% obtenido por el modelo de k-means.
+
+Pese a obtener un accuracy mayor con el modelo de clustering jerárquico, hay que tener en cuenta que el objetivo de aprendizaje no supervisado es la agrupación de los datos en función de sus características, y no la predicción de una variable objetivo. Además, el accuracy obtenido con el modelo de clustering jerárquico es muy alto, lo que puede deberse a que el dataset utilizado es muy reducido y no presenta mucha variabilidad entre las clases.
